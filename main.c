@@ -24,11 +24,20 @@ int se_voando[NUMAVI];
 
 
 //declarações de funções 
-void* aviao();
+void* aviao(void*);
 void* torreDeComando();
 
 
 //implementação de funções
+
+//torre de comando 
+void* torreDeComando(){ 
+    while(1){ 
+        //TODO
+    }
+    
+}
+
 //avião 
 void* aviao(void* args){ 
     int id = *((int*) args); 
