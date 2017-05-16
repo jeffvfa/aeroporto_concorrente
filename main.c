@@ -13,7 +13,7 @@
 sem_t pista; 
 
 //thread avião 
-pthread_t avioes[NUMAVI]; 
+pthread_t avioes[NUMAVI], torre_de_comando; 
 
 /* 
 *informação se o avião está voando
@@ -25,7 +25,7 @@ int se_voando[NUMAVI];
 
 //declarações de funções 
 void* aviao();
-
+void* torreDeComando();
 
 
 //implementação de funções
@@ -47,6 +47,10 @@ int main(){
     //inicialização da pista
     sem_init(&pista,0,1);
     
+    //thread torre de comando 
+    pthread_create(&(torre_de_comando), NULL, torreDeComando,NULL);
+    
+    //threads de aviões
     for(i=0;i<NUMAVI;i++){ 
         id = (int *) malloc(sizeof(int));
         *id = i;
