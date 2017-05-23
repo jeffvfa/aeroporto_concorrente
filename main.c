@@ -7,7 +7,7 @@
 #include <pthread.h>  
 #include <semaphore.h> 
 
-#define NUMAVI 50 
+#define NUMAVI 6 
 #define NUMPORT 5
 
 //pista de pouso 
@@ -37,7 +37,7 @@ int portaoLivre();
 
 //torre de comando 
 void* torreDeComando(){ 
-    int portaoL;
+    int portaoL, i;
     while(1){
         //verifica se há portão de embarque livre
         pthread_mutex_lock(&lockPortoes); 
@@ -48,6 +48,14 @@ void* torreDeComando(){
             sem_post(&semPista);
         }
 	    pthread_mutex_unlock(&lockPortoes); 
+	    
+	    sleep(2);
+	    
+	    for(i=0;i<NUMPORT;i++){ 
+            if(portoes[i] != -1) 
+                printf("\tTORRE DE COMANDO: o portão %d está ocupado pelo avião %d\n",i,portoes[i]);
+	    }
+	    
 	}
     
 }
@@ -60,11 +68,11 @@ void* aviao(void* args){
         printf("Avião %d voando\n",id); 
         sleep(3);
         
-        printf("Avião %d quer pousar, informando a pista de comando\n.\n.\n.\n",id);
+        printf("Avião %d quer pousar, informando a torrre de controle\n.\n.\n.\n",id);
         if(sem_trywait(&semPista)==0){
             printf("\n.\n.\n.\n.\nAvião %d pousou!!\n",id); 
             pthread_mutex_lock(&lockPortoes); 
-                if(portoes[portaoIndicado] == 0){ 
+                if(portoes[portaoIndicado] == -1){ 
                 portoes[portaoIndicado] = id;
                 printf("Avião %d está no portão %d\n",id,portaoIndicado); 
                 }
@@ -89,7 +97,7 @@ void* aviao(void* args){
 int portaoLivre(){  
     int i;
     for(i=0;i<NUMPORT;i++){ 
-        if(portoes[i] == 0) 
+        if(portoes[i] == -1) 
             return i;
     } 
     
@@ -116,7 +124,7 @@ int main(){
     
     //portões vazios
     for(i=0;i<NUMPORT;i++){ 
-        portoes[i] = 0;
+        portoes[i] = -1;
     }
     
     //printf("Olá");
