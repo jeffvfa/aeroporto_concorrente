@@ -2,15 +2,16 @@
 * @author: @jeffvfa github.com/jeffvfa
 */
 
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>  
 #include <semaphore.h> 
 
-#define NUMAVI 100 
+#define NUMAVI 10 
+#define NUMPORT 5
 
 //pista de pouso 
-sem_t pista; 
+sem_t semPista; 
 
 //thread avião 
 pthread_t avioes[NUMAVI], torre_de_comando; 
@@ -20,7 +21,7 @@ pthread_t avioes[NUMAVI], torre_de_comando;
 *   se voando igual a 1, o avião está voando, 
 *   se igual a 0 está pousado;
 */
-int se_voando[NUMAVI];
+int se_voando[NUMAVI], portoes[NUMPORT];
 
 
 //declarações de funções 
@@ -43,7 +44,18 @@ void* aviao(void* args){
     int id = *((int*) args); 
     
     while(1){
-        printf("\t %d \n",id);
+        printf("Avião %d voando\n",id); 
+        sleep(3);
+        
+        printf("Avião %d quer pousar, informando a pista de comando\n.\n.\n.\n",id);
+        if(sem_trywait(&semPista)==0){
+            //TODO 
+            getchar();
+        }
+        else{
+            //TODO 
+            printf("a pista não estava liberada então o avião %d vai circular\n",id);
+        }
         //TODO
     }
 }
@@ -54,7 +66,7 @@ int main(){
     int i =0, *id;
     
     //inicialização da pista
-    sem_init(&pista,0,1);
+    sem_init(&semPista,0,0);
     
     //thread torre de comando 
     pthread_create(&(torre_de_comando), NULL, torreDeComando,NULL);
@@ -62,11 +74,17 @@ int main(){
     //threads de aviões
     for(i=0;i<NUMAVI;i++){ 
         id = (int *) malloc(sizeof(int));
-        *id = i;
+        *id = i; 
+        se_voando[i] = 0;
         pthread_create(&(avioes[i]), NULL, aviao,id);
     }
     
-    printf("Olá");
+    //portões vazios
+    for(i=0;i<NUMPORT;i++){ 
+        portoes[i] = 0;
+    }
+    
+    //printf("Olá");
     
     getchar(); 
     return 0;
