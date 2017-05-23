@@ -7,11 +7,14 @@
 #include <pthread.h>  
 #include <semaphore.h> 
 
-#define NUMAVI 10 
+#define NUMAVI 50 
 #define NUMPORT 5
 
 //pista de pouso 
-sem_t semPista; 
+sem_t semPista;  
+
+//lock dos portões 
+pthread_mutex_t lockPortoes = PTHREAD_MUTEX_INITIALIZER;
 
 //thread avião 
 pthread_t avioes[NUMAVI], torre_de_comando; 
@@ -21,21 +24,31 @@ pthread_t avioes[NUMAVI], torre_de_comando;
 *   se voando igual a 1, o avião está voando, 
 *   se igual a 0 está pousado;
 */
-int se_voando[NUMAVI], portoes[NUMPORT];
+int se_voando[NUMAVI], portoes[NUMPORT], portaoIndicado;
 
 
 //declarações de funções 
 void* aviao(void*);
-void* torreDeComando();
+void* torreDeComando(); 
+int portaoLivre(); 
 
 
 //implementação de funções
 
 //torre de comando 
 void* torreDeComando(){ 
-    while(1){ 
-        //TODO
-    }
+    int portaoL;
+    while(1){
+        //verifica se há portão de embarque livre
+        pthread_mutex_lock(&lockPortoes); 
+        portaoL = portaoLivre(); 
+        if(portaoL != -1){ 
+            printf("\tTORRE DE COMANDO: o portão %d está livre, liberando a pista\n",portaoL); 
+            portaoIndicado = portaoL;
+            sem_post(&semPista);
+        }
+	    pthread_mutex_unlock(&lockPortoes); 
+	}
     
 }
 
@@ -49,17 +62,39 @@ void* aviao(void* args){
         
         printf("Avião %d quer pousar, informando a pista de comando\n.\n.\n.\n",id);
         if(sem_trywait(&semPista)==0){
-            //TODO 
-            getchar();
+            printf("\n.\n.\n.\n.\nAvião %d pousou!!\n",id); 
+            pthread_mutex_lock(&lockPortoes); 
+                if(portoes[portaoIndicado] == 0){ 
+                portoes[portaoIndicado] = id;
+                printf("Avião %d está no portão %d\n",id,portaoIndicado); 
+                }
+	        pthread_mutex_unlock(&lockPortoes); 
+	        
+	        sleep(5);
+	        
         }
         else{
             //TODO 
-            printf("a pista não estava liberada então o avião %d vai circular\n",id);
+            printf("A pista não estava liberada então o avião %d vai circular\n",id); 
+            sleep(5);
         }
         //TODO
     }
 }
 
+/*
+* se há um portão livre retorna o número do portão
+* se não há retorna -1
+*/
+int portaoLivre(){  
+    int i;
+    for(i=0;i<NUMPORT;i++){ 
+        if(portoes[i] == 0) 
+            return i;
+    } 
+    
+    return -1;
+}
 
 int main(){
     //declarações de variáveis
