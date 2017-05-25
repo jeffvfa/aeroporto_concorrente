@@ -42,15 +42,18 @@ void* torreDeComando(){
         //verifica se há portão de embarque livre
         pthread_mutex_lock(&lockPortoes); 
         portaoL = portaoLivre(); 
+        
+        //se há 
         if(portaoL != -1){ 
             printf("\tTORRE DE COMANDO: o portão %d está livre, liberando a pista\n",portaoL); 
             portaoIndicado = portaoL;
+            //libera a pista
             sem_post(&semPista);
         }
 	    pthread_mutex_unlock(&lockPortoes); 
 	    
 	    sleep(2);
-	    
+	    //verifica quais portões estão ocupados, e quem os ocupa
 	    for(i=0;i<NUMPORT;i++){ 
             if(portoes[i] != -1) 
                 printf("\tTORRE DE COMANDO: o portão %d está ocupado pelo avião %d\n",i,portoes[i]);
@@ -69,6 +72,8 @@ void* aviao(void* args){
         sleep(3);
         
         printf("Avião %d quer pousar, informando a torrre de controle\n.\n.\n.\n",id);
+        
+        //tenta pousar
         if(sem_trywait(&semPista)==0){
             printf("\n.\n.\n.\n.\nAvião %d pousou!!\n",id); 
             pthread_mutex_lock(&lockPortoes); 
@@ -81,8 +86,8 @@ void* aviao(void* args){
 	        sleep(5);
 	        
         }
+        //se não consegue fica circulando
         else{
-            //TODO 
             printf("A pista não estava liberada então o avião %d vai circular\n",id); 
             sleep(5);
         }
@@ -126,8 +131,6 @@ int main(){
     for(i=0;i<NUMPORT;i++){ 
         portoes[i] = -1;
     }
-    
-    //printf("Olá");
     
     getchar(); 
     return 0;
