@@ -7,11 +7,21 @@
 #include <pthread.h>  
 #include <semaphore.h> 
 
-#define NUMAVI 6 
-#define NUMPORT 5
+#define NUMAVI 1 
+#define NUMPORT 5 
+#define NUMSOLO 2 
+
+#define TEMPO 1
 
 //pista de pouso 
 sem_t semPista;  
+
+//aguarda pouso 
+sem_t aguarda_pouso;  
+
+//equipes de solo 
+sem_t equipes;  
+
 
 //lock dos portões 
 pthread_mutex_t lockPortoes = PTHREAD_MUTEX_INITIALIZER;
@@ -25,7 +35,6 @@ pthread_t avioes[NUMAVI], torre_de_comando;
 *   se igual a 0 está pousado;
 */
 int se_voando[NUMAVI], portoes[NUMPORT], portaoIndicado;
-
 
 //declarações de funções 
 void* aviao(void*);
@@ -48,11 +57,11 @@ void* torreDeComando(){
             printf("\tTORRE DE COMANDO: o portão %d está livre, liberando a pista\n",portaoL); 
             portaoIndicado = portaoL;
             //libera a pista
-            sem_post(&semPista);
+            sem_post(&semPista);  
+            printf("\tTORRE DE COMANDO: Pista liberada! Avião indo para o portão %d, aguardando pouso para liberação da pista\n",portaoL); 
         }
 	    pthread_mutex_unlock(&lockPortoes); 
 	    
-	    sleep(2);
 	    //verifica quais portões estão ocupados, e quem os ocupa
 	    for(i=0;i<NUMPORT;i++){ 
             if(portoes[i] != -1) 
@@ -65,31 +74,48 @@ void* torreDeComando(){
 
 //avião 
 void* aviao(void* args){ 
-    int id = *((int*) args); 
+    int id = *((int*) args), j, portaoOcupado; 
     
     while(1){
         printf("Avião %d voando\n",id); 
-        sleep(3);
+        sleep(TEMPO*6);
         
         printf("Avião %d quer pousar, informando a torrre de controle\n.\n.\n.\n",id);
         
-        //tenta pousar
-        if(sem_trywait(&semPista)==0){
-            printf("\n.\n.\n.\n.\nAvião %d pousou!!\n",id); 
-            pthread_mutex_lock(&lockPortoes); 
+        if(sem_trywait(&semPista)!=0){   
+            printf("aqui");
+           /* pthread_mutex_lock(&lockPortoes);
+                printf("\n.\n.\n.\n.\nAvião %d pousou!!\n",id); 
                 if(portoes[portaoIndicado] == -1){ 
-                portoes[portaoIndicado] = id;
-                printf("Avião %d está no portão %d\n",id,portaoIndicado); 
+                printf("Avião %d está pousando%d\n",id,portaoIndicado);
+                sleep(TEMPO*2);
+                portoes[portaoIndicado] = id;  
+                printf("Avião %d está no portão %d\n",id,portaoIndicado);   
+                sem_post(&aguarda_pouso);
+                portaoOcupado = portaoOcupado;
                 }
 	        pthread_mutex_unlock(&lockPortoes); 
+	        printf("Passageiros do avião %d estão desembarcando no portão %d\n",id,portaoIndicado);
+	        sleep(TEMPO*5); 
+	        printf("Avião %d aguardando equipes de solo para prearar o voo\n",id);
 	        
-	        sleep(5);
+	        sem_wait(&equipes);
+	        sleep(TEMPO*2);
+	        printf("Equipes já prepararam o avião %d! Aguardando liberação de pista para decolar\n",id);  
+	        sem_post(&equipes);
 	        
+	        //sem_wait(&semPista); 
+	        printf("Pista liberada avião %d decolou\n",id); 
+	        //sem_post(&aguarda_pouso);
+	        
+	        pthread_mutex_lock(&lockPortoes);
+	            portoes[portaoOcupado] = -1;   
+            pthread_mutex_unlock(&lockPortoes);*/
         }
         //se não consegue fica circulando
         else{
             printf("A pista não estava liberada então o avião %d vai circular\n",id); 
-            sleep(5);
+            sleep(TEMPO*5);
         }
         //TODO
     }
@@ -113,8 +139,20 @@ int main(){
     //declarações de variáveis
     int i =0, *id;
     
+    //portões vazios
+    for(i=0;i<NUMPORT;i++){ 
+        portoes[i] = -1;
+    }
+    
+    
     //inicialização da pista
-    sem_init(&semPista,0,0);
+    sem_init(&semPista,0,0); 
+    
+    //inicialização das equipes de solo
+    sem_init(&aguarda_pouso,0,0);
+    
+    //inicialização das equipes de solo
+    sem_init(&equipes,0,NUMSOLO);
     
     //thread torre de comando 
     pthread_create(&(torre_de_comando), NULL, torreDeComando,NULL);
@@ -125,11 +163,6 @@ int main(){
         *id = i; 
         se_voando[i] = 0;
         pthread_create(&(avioes[i]), NULL, aviao,id);
-    }
-    
-    //portões vazios
-    for(i=0;i<NUMPORT;i++){ 
-        portoes[i] = -1;
     }
     
     getchar(); 
